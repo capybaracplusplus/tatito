@@ -1,28 +1,44 @@
-COMPOSE=docker-compose
+COMPOSE := docker compose
 
-.PHONY: up down clean restart
+.PHONY: configure build release sanitize run tests clean \
+	infra-up infra-down infra-reset infra-restart up down restart start
 
+configure:
+	cmake --preset debug
 
-up:
-	$(COMPOSE) up -d
+build: configure
+	cmake --build --preset debug --parallel
 
+release:
+	cmake --preset release
+	cmake --build --preset release --parallel
 
-down:
-	$(COMPOSE) down
+sanitize:
+	cmake --preset asan-ubsan
+	cmake --build --preset asan-ubsan --parallel
+
+run: build
+	./build/debug/Tic_Tac_Toe_Boost
 
 clean:
-	$(COMPOSE) down -v
+	cmake --build --preset debug --target clean
 
-restart: clean up
+infra-up:
+	$(COMPOSE) up --detach
 
-run:
-	./cmake-build-debug/Tic_Tac_Toe_Boost
+infra-down:
+	$(COMPOSE) down
 
-start: clean up run_bin
+infra-reset:
+	$(COMPOSE) down --volumes
 
-.PHONY: tests
+infra-restart: infra-down infra-up
 
-ROOT_DIR := $(dir $(realpath $(firstword $(MAKEFILE_LIST))))
+# Backward-compatible aliases.
+up: infra-up
+down: infra-down
+restart: infra-restart
+start: infra-up run
 
 tests:
-	cd $(ROOT_DIR) && ./test_runner.sh
+	./test_runner.sh
