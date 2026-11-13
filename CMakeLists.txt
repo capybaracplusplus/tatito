@@ -47,7 +47,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         jwt-cpp::jwt-cpp
         nlohmann_json::nlohmann_json
         redis++_static
-        hiredis
+        PkgConfig::HIREDIS
 )
 
 tatito_set_compiler_warnings(${PROJECT_NAME})

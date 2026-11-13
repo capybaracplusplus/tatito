@@ -17,6 +17,7 @@ The original unfinished state is available at the `prototype-2025` tag.
 - CMake 3.28 or newer
 - a C++23 compiler
 - Boost 1.82 or newer with Boost.Log
+- hiredis
 - OpenSSL
 - Ninja
 

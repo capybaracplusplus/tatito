@@ -12,7 +12,7 @@ jobs:
       - name: Install build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install --yes ninja-build libboost-all-dev libssl-dev
+          sudo apt-get install --yes ninja-build pkg-config libboost-all-dev libhiredis-dev libssl-dev
       - name: Configure
         run: cmake --preset ci
       - name: Build
@@ -25,7 +25,7 @@ jobs:
       - name: Install build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install --yes ninja-build libboost-all-dev libssl-dev
+          sudo apt-get install --yes ninja-build pkg-config libboost-all-dev libhiredis-dev libssl-dev
       - name: Configure
         run: cmake --preset asan-ubsan
       - name: Build

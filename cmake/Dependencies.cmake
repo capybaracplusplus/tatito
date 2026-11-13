@@ -3,7 +3,7 @@ include_guard(GLOBAL)
 include(FetchContent)
 
 # Avoid re-fetching moving refs after the first successful configure. Every
-# dependency below is pinned to a release tag or an immutable commit.
+# source dependency below is pinned to a release archive or immutable commit.
 set(FETCHCONTENT_UPDATES_DISCONNECTED ON)
 
 # Some transitive dependency releases still declare compatibility with old
@@ -31,15 +31,8 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(jwt-cpp)
 
-set(DISABLE_TESTS ON CACHE BOOL "" FORCE)
-set(ENABLE_SSL OFF CACHE BOOL "" FORCE)
-
-FetchContent_Declare(
-        hiredis
-        GIT_REPOSITORY https://github.com/redis/hiredis.git
-        GIT_TAG ccad7ebaf99310957004661d1c5f82d2a33ebd10
-)
-FetchContent_MakeAvailable(hiredis)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(HIREDIS REQUIRED IMPORTED_TARGET hiredis>=1.0)
 
 set(REDIS_PLUS_PLUS_BUILD_TEST OFF CACHE BOOL "" FORCE)
 set(REDIS_PLUS_PLUS_BUILD_ASYNC_TEST OFF CACHE BOOL "" FORCE)
