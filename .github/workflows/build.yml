@@ -1,0 +1,32 @@
+name: Build
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  debug:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes ninja-build pkg-config libboost-all-dev libhiredis-dev libssl-dev
+      - name: Configure
+        run: cmake --preset ci
+      - name: Build
+        run: cmake --build --preset ci --parallel
+
+  sanitizers:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes ninja-build pkg-config libboost-all-dev libhiredis-dev libssl-dev
+      - name: Configure
+        run: cmake --preset asan-ubsan
+      - name: Build
+        run: cmake --build --preset asan-ubsan --parallel

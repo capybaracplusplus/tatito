@@ -4,16 +4,15 @@ std::unordered_map<std::string, std::deque<std::string>>
     NotificationService::inbox_;
 std::mutex NotificationService::mutex_;
 
-void NotificationService::notify(boost::asio::io_context &io_context,
+void NotificationService::notify(boost::asio::io_context &,
                                  const std::string &uuid,
                                  const std::string &message) {
   std::lock_guard<std::mutex> lock(mutex_);
   inbox_[uuid].push_back(message);
 }
 
-std::string
-NotificationService::read_notice(boost::asio::io_context &io_context,
-                                 const std::string &uuid) {
+std::string NotificationService::read_notice(boost::asio::io_context &,
+                                             const std::string &uuid) {
   std::lock_guard<std::mutex> lock(mutex_);
 
   auto it = inbox_.find(uuid);

@@ -2,7 +2,9 @@
 #define SESSION_H
 
 #include <boost/asio.hpp>
+#include <memory>
 #include <routes/router.h>
+#include <string>
 
 using boost::asio::ip::tcp;
 

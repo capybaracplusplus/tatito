@@ -2,6 +2,8 @@
 #define SESSION_MANAGER_H
 
 #include <memory>
+#include <mutex>
+#include <string>
 #include <unordered_map>
 
 class Session;

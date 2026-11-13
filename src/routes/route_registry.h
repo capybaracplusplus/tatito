@@ -4,6 +4,7 @@
 #include <handlers/handlers.h>
 #include <memory>
 #include <mutex>
+#include <string>
 #include <unordered_map>
 #include <utils/http_request.h>
 

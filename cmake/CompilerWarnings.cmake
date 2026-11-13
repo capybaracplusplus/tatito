@@ -1,0 +1,21 @@
+include_guard(GLOBAL)
+
+option(TATITO_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
+
+function(tatito_set_compiler_warnings target)
+    if(MSVC)
+        set(project_warnings /W4 /permissive-)
+        if(TATITO_WARNINGS_AS_ERRORS)
+            list(APPEND project_warnings /WX)
+        endif()
+    elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+        set(project_warnings -Wall -Wextra -Wpedantic -Werror=return-type)
+        if(TATITO_WARNINGS_AS_ERRORS)
+            list(APPEND project_warnings -Werror)
+        endif()
+    else()
+        message(WARNING "No compiler warning set is configured for ${CMAKE_CXX_COMPILER_ID}")
+    endif()
+
+    target_compile_options(${target} PRIVATE ${project_warnings})
+endfunction()

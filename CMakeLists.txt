@@ -1,32 +1,54 @@
 cmake_minimum_required(VERSION 3.28)
-cmake_policy(SET CMP0167 OLD)
-project(Tic_Tac_Toe_Boost)
 
-set(CMAKE_CXX_STANDARD 23)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
+project(Tic_Tac_Toe_Boost VERSION 0.1.0 LANGUAGES C CXX)
 
-# <----------------------------- Add Executable ----------------------------->
-file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/src/*.cpp ${CMAKE_SOURCE_DIR}/src/*.h)
-add_executable(${PROJECT_NAME} ${SRC_FILES})
+include(cmake/Dependencies.cmake)
+include(cmake/CompilerWarnings.cmake)
+include(cmake/Sanitizers.cmake)
 
-# <---------------------------- Include Directories ---------------------------->
-file(GLOB_RECURSE HANDLER_HEADERS ${CMAKE_SOURCE_DIR}/src/handlers/*.h)
+add_executable(${PROJECT_NAME})
 
-set(HANDLER_DIRS "")
-foreach(header ${HANDLER_HEADERS})
-    get_filename_component(dir ${header} DIRECTORY)
-    list(APPEND HANDLER_DIRS ${dir})
-endforeach()
-list(REMOVE_DUPLICATES HANDLER_DIRS)
-
-target_include_directories(${PROJECT_NAME} PRIVATE
-        ${HANDLER_DIRS}
-        ${CMAKE_SOURCE_DIR}/src
+target_sources(${PROJECT_NAME} PRIVATE
+        src/main.cpp
+        src/handlers/base_handler.cpp
+        src/handlers/not_found_handler.cpp
+        src/handlers/notify_handler.cpp
+        src/handlers/game/create_game_handler.cpp
+        src/handlers/game/join_game_handler.cpp
+        src/handlers/game/remove_game_handler.cpp
+        src/handlers/move/make_move_handler.cpp
+        src/repositories/game_repository.cpp
+        src/repositories/matchmaking_repository.cpp
+        src/routes/route_registry.cpp
+        src/routes/router.cpp
+        src/routes/routes.cpp
+        src/services/game_service.cpp
+        src/services/matchmaking_service.cpp
+        src/services/move_service.cpp
+        src/services/notification_service.cpp
+        src/session/session.cpp
+        src/session_manager/session_manager.cpp
+        src/tcp_server/tcp_server.cpp
+        src/utils/http_request.cpp
+        src/utils/http_response.cpp
+        src/utils/jwt_token.cpp
+        src/utils/redis_client_factory.cpp
 )
 
-# <----------------------------- Add External Libraries ----------------------------->
-include(cmake/jwt-cpp.cmake)
-include(cmake/nlohmann_json.cmake)
-include(cmake/redis-plus-plus.cmake)
-include(cmake/boost.cmake)
+target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_23)
+set_target_properties(${PROJECT_NAME} PROPERTIES CXX_EXTENSIONS OFF)
+
+target_include_directories(${PROJECT_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/src)
+
+target_link_libraries(${PROJECT_NAME} PRIVATE
+        Boost::headers
+        Boost::log
+        Threads::Threads
+        jwt-cpp::jwt-cpp
+        nlohmann_json::nlohmann_json
+        redis++_static
+        PkgConfig::HIREDIS
+)
+
+tatito_set_compiler_warnings(${PROJECT_NAME})
+tatito_enable_sanitizers(${PROJECT_NAME})

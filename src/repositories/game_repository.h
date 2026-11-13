@@ -1,6 +1,9 @@
 #ifndef GAME_REPOSITORY_H
 #define GAME_REPOSITORY_H
 
+#include <memory>
+#include <optional>
+#include <string>
 #include <utils/matchmaking_sesion.h>
 #include <utils/redis_client_factory.h>
 

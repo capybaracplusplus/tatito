@@ -36,9 +36,7 @@ void JoinGameHandler::handle_request(boost::asio::io_context &io_context,
     send_response(io_context, socket, response.to_string());
 
     try {
-      auto future_notify =
-          NotificationService::notify(io_context, game_id, body);
-      future_notify.get();
+      NotificationService::notify(io_context, game_id, body);
     } catch (const std::exception &notify_error) {
       BOOST_LOG_TRIVIAL(error)
           << "Notification failed: " << notify_error.what();

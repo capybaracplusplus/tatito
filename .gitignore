@@ -1,5 +1,7 @@
-cmake-build-debug
-.idea
-.venv
+/build/
+/cmake-build-*/
+/.idea/
+/.venv/
 **/__pycache__/
-result.log
+/CMakeUserPresets.json
+/result.log
