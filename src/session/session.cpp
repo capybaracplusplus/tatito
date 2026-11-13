@@ -1,8 +1,12 @@
+#include <algorithm>
 #include <boost/asio/read_until.hpp>
 #include <boost/log/trivial.hpp>
-#include <iostream>
+#include <cctype>
+#include <iterator>
 #include <nlohmann/json.hpp>
 #include <session/session.h>
+#include <sstream>
+#include <string>
 using json = nlohmann::json;
 
 router Session::router_;

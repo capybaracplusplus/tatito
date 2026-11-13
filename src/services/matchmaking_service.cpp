@@ -1,4 +1,7 @@
+#include <exception>
 #include <exceptions/conflict_exception.h>
+#include <future>
+#include <memory>
 #include <nlohmann/json.hpp>
 #include <repositories/game_repository.h>
 #include <repositories/matchmaking_repository.h>
@@ -16,7 +19,7 @@ MatchmakingService::create(boost::asio::io_context &io_context,
       std::make_shared<std::promise<void>>();
   auto future = promise_ptr->get_future();
 
-  io_context.post([creator_uuid, game_password, promise_ptr]() {
+  boost::asio::post(io_context, [creator_uuid, game_password, promise_ptr]() {
     try {
       using repositories::matchmaking::MatchmakingRepository;
       MatchmakingRepository matchmaking_repos;
@@ -55,7 +58,8 @@ MatchmakingService::join(boost::asio::io_context &io_context,
   auto promise_ptr = std::make_shared<std::promise<MatchmakingSesion>>();
   auto future = promise_ptr->get_future();
 
-  io_context.post([creator_uuid, joining_uuid, password, promise_ptr]() {
+  boost::asio::post(io_context, [creator_uuid, joining_uuid, password,
+                                 promise_ptr]() {
     try {
       using repositories::game::GameRepository;
       using repositories::matchmaking::MatchmakingRepository;

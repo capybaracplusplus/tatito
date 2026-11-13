@@ -1,6 +1,9 @@
 #ifndef REDIS_REPOS_MATCHMAKING_H
 #define REDIS_REPOS_MATCHMAKING_H
 
+#include <memory>
+#include <optional>
+#include <string>
 #include <utils/redis_client_factory.h>
 
 namespace repositories::matchmaking {

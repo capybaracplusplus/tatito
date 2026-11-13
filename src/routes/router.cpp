@@ -1,6 +1,8 @@
 #include <handlers/handlers.h>
+#include <memory>
 #include <routes/router.h>
 #include <routes/routes.h>
+#include <vector>
 
 router::router() { register_all_routes(); }
 
