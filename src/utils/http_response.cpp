@@ -33,6 +33,8 @@ std::string HttpResponse::get_status_message() const {
     switch (status_code) {
     case 200:
         return "OK";
+    case 201:
+        return "Created";
     case 400:
         return "Bad Request";
     case 401:
@@ -41,6 +43,8 @@ std::string HttpResponse::get_status_message() const {
         return "Forbidden";
     case 404:
         return "Not Found";
+    case 409:
+        return "Conflict";
     case 413:
         return "Payload Too Large";
     case 431:

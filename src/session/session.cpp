@@ -178,7 +178,8 @@ void Session::handle_request_body(http_request req, std::string body) {
             req.body = json::parse(body);
         } catch (const json::parse_error &error) {
             BOOST_LOG_TRIVIAL(error) << "JSON parse error: " << error.what();
-            req.body = json::object();
+            write_error_response(400, "invalid JSON body");
+            return;
         }
     }
 
@@ -189,9 +190,13 @@ void Session::handle_request_body(http_request req, std::string body) {
 }
 
 void Session::write_error_response(int status, std::string message) {
+    json body;
+    body["error"] = std::move(message);
+
     HttpResponse response(status);
+    response.set_header("Content-Type", "application/json");
     response.set_header("Connection", "close");
-    response.set_body(message);
+    response.set_body(body.dump());
     write_response(std::move(response), false, true);
 }
 
