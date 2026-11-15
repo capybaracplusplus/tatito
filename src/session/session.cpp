@@ -159,6 +159,8 @@ Session::Session(
     : socket_(std::move(socket)),
       io_context_(io_context),
       strand_(boost::asio::make_strand(io_context)),
+      read_timer_(io_context),
+      write_timer_(io_context),
       buffer_(max_header_size),
       on_close_(std::move(on_close)) {}
 
@@ -247,6 +249,7 @@ void Session::read_request() {
     }
 
     auto self = shared_from_this();
+    start_read_timeout();
 
     boost::asio::async_read_until(
         socket_,
@@ -255,6 +258,8 @@ void Session::read_request() {
         boost::asio::bind_executor(
             strand_,
             [self](boost::system::error_code ec, std::size_t header_length) {
+                self->cancel_read_timeout();
+
                 if (self->closed_) {
                     return;
                 }
@@ -324,6 +329,7 @@ void Session::read_request() {
                     return;
                 }
 
+                self->start_read_timeout();
                 boost::asio::async_read(
                     self->socket_,
                     boost::asio::buffer(
@@ -335,6 +341,8 @@ void Session::read_request() {
                         [self,
                          req = std::move(req),
                          body](boost::system::error_code ec, std::size_t) mutable {
+                            self->cancel_read_timeout();
+
                             if (self->closed_) {
                                 return;
                             }
@@ -377,6 +385,7 @@ void Session::write_next() {
     }
 
     auto self = shared_from_this();
+    start_write_timeout();
 
     boost::asio::async_write(
         socket_,
@@ -387,6 +396,8 @@ void Session::write_next() {
                 boost::system::error_code ec,
                 std::size_t /*length*/
             ) {
+                self->cancel_write_timeout();
+
                 if (self->closed_) {
                     return;
                 }
@@ -417,6 +428,52 @@ void Session::write_next() {
     );
 }
 
+void Session::start_read_timeout() {
+    auto self = shared_from_this();
+    read_timer_.expires_after(read_timeout);
+    read_timer_
+        .async_wait(boost::asio::bind_executor(strand_, [self](boost::system::error_code ec) {
+            if (ec == boost::asio::error::operation_aborted || self->closed_) {
+                return;
+            }
+
+            if (ec) {
+                BOOST_LOG_TRIVIAL(error) << "Read timer error: " << ec.message();
+            } else {
+                BOOST_LOG_TRIVIAL(info) << "Session read timeout";
+            }
+
+            self->close();
+        }));
+}
+
+void Session::cancel_read_timeout() {
+    read_timer_.cancel();
+}
+
+void Session::start_write_timeout() {
+    auto self = shared_from_this();
+    write_timer_.expires_after(write_timeout);
+    write_timer_
+        .async_wait(boost::asio::bind_executor(strand_, [self](boost::system::error_code ec) {
+            if (ec == boost::asio::error::operation_aborted || self->closed_) {
+                return;
+            }
+
+            if (ec) {
+                BOOST_LOG_TRIVIAL(error) << "Write timer error: " << ec.message();
+            } else {
+                BOOST_LOG_TRIVIAL(info) << "Session write timeout";
+            }
+
+            self->close();
+        }));
+}
+
+void Session::cancel_write_timeout() {
+    write_timer_.cancel();
+}
+
 void Session::close() {
     if (closed_) {
         return;
@@ -424,6 +481,8 @@ void Session::close() {
 
     closed_ = true;
     write_queue_.clear();
+    cancel_read_timeout();
+    cancel_write_timeout();
 
     boost::system::error_code ignored_error;
     socket_.cancel(ignored_error);

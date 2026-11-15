@@ -1,6 +1,7 @@
 #ifndef SESSION_H
 #define SESSION_H
 
+#include <chrono>
 #include <cstddef>
 #include <deque>
 #include <functional>
@@ -31,6 +32,8 @@ public:
 private:
     static constexpr std::size_t max_header_size = 16 * 1024;
     static constexpr std::size_t max_body_size = 1024 * 1024;
+    static constexpr auto read_timeout = std::chrono::seconds(10);
+    static constexpr auto write_timeout = std::chrono::seconds(10);
 
     enum class WriteAction {
         none,
@@ -55,6 +58,14 @@ private:
 
     void write_next();
 
+    void start_read_timeout();
+
+    void cancel_read_timeout();
+
+    void start_write_timeout();
+
+    void cancel_write_timeout();
+
     void close();
 
 private:
@@ -62,6 +73,8 @@ private:
     boost::asio::io_context &io_context_;
 
     boost::asio::strand<boost::asio::io_context::executor_type> strand_;
+    boost::asio::steady_timer read_timer_;
+    boost::asio::steady_timer write_timer_;
 
     boost::asio::streambuf buffer_;
     std::deque<PendingWrite> write_queue_;
