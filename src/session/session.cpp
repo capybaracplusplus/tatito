@@ -151,11 +151,16 @@ bool header_contains_token(
 
 router Session::router_;
 
-Session::Session(boost::asio::io_context &io_context, tcp::socket socket)
+Session::Session(
+    boost::asio::io_context &io_context,
+    tcp::socket socket,
+    std::function<void(const std::string &)> on_close
+)
     : socket_(std::move(socket)),
       io_context_(io_context),
       strand_(boost::asio::make_strand(io_context)),
-      buffer_(max_header_size) {}
+      buffer_(max_header_size),
+      on_close_(std::move(on_close)) {}
 
 void Session::start() {
     auto self = shared_from_this();
@@ -424,4 +429,9 @@ void Session::close() {
     socket_.cancel(ignored_error);
     socket_.shutdown(tcp::socket::shutdown_both, ignored_error);
     socket_.close(ignored_error);
+
+    if (on_close_) {
+        auto on_close = std::move(on_close_);
+        on_close(uuid_);
+    }
 }

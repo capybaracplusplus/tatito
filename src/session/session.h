@@ -3,6 +3,7 @@
 
 #include <cstddef>
 #include <deque>
+#include <functional>
 #include <memory>
 #include <string>
 
@@ -15,7 +16,11 @@ using boost::asio::ip::tcp;
 
 class Session : public std::enable_shared_from_this<Session> {
 public:
-    explicit Session(boost::asio::io_context &io_context, tcp::socket socket);
+    explicit Session(
+        boost::asio::io_context &io_context,
+        tcp::socket socket,
+        std::function<void(const std::string &)> on_close
+    );
 
     void start();
 
@@ -63,6 +68,7 @@ private:
 
     static router router_;
     std::string uuid_;
+    std::function<void(const std::string &)> on_close_;
     bool closed_ = false;
 };
 
