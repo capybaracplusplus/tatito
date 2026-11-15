@@ -14,6 +14,8 @@ public:
 
     void set_body(const std::string &body);
 
+    bool should_close() const;
+
     std::string to_string() const;
 
 private:

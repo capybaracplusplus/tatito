@@ -1,6 +1,9 @@
 #include <sstream>
 #include <utils/http_response.h>
 
+#include <algorithm>
+#include <cctype>
+
 HttpResponse::HttpResponse(int status)
     : status_code(status) {
     headers["Content-Type"] = "text/plain";
@@ -17,6 +20,19 @@ void HttpResponse::set_header(const std::string &key, const std::string &value) 
 void HttpResponse::set_body(const std::string &body) {
     response_body = body;
     headers["Content-Length"] = std::to_string(body.size());
+}
+
+bool HttpResponse::should_close() const {
+    const auto header = headers.find("Connection");
+    if (header == headers.end()) {
+        return false;
+    }
+
+    std::string value = header->second;
+    std::transform(value.begin(), value.end(), value.begin(), [](unsigned char symbol) {
+        return static_cast<char>(std::tolower(symbol));
+    });
+    return value == "close";
 }
 
 std::string HttpResponse::to_string() const {

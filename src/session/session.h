@@ -27,10 +27,15 @@ private:
     static constexpr std::size_t max_header_size = 16 * 1024;
     static constexpr std::size_t max_body_size = 1024 * 1024;
 
+    enum class WriteAction {
+        none,
+        read_next_request,
+        close_connection,
+    };
+
     struct PendingWrite {
         std::string data;
-        bool read_next_request;
-        bool close_after_write;
+        WriteAction action;
     };
 
     void read_request();
@@ -39,13 +44,9 @@ private:
 
     void write_error_response(int status, std::string message);
 
-    void write_response(
-        HttpResponse response,
-        bool read_next_request = true,
-        bool close_after_write = false
-    );
+    void write_response(HttpResponse response, WriteAction action = WriteAction::read_next_request);
 
-    void enqueue_write(std::string data, bool read_next_request, bool close_after_write);
+    void enqueue_write(std::string data, WriteAction action);
 
     void write_next();
 

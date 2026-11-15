@@ -121,6 +121,32 @@ std::optional<std::size_t> parse_content_length(const http_request &req) {
     return content_length;
 }
 
+bool header_contains_token(
+    const http_request &req,
+    const std::string &header_name,
+    const std::string &expected_token
+) {
+    const auto header = req.headers.find(header_name);
+    if (header == req.headers.end()) {
+        return false;
+    }
+
+    std::istringstream stream(header->second);
+    std::string token;
+    while (std::getline(stream, token, ',')) {
+        token = trim_header_value(std::move(token));
+        std::transform(token.begin(), token.end(), token.begin(), [](unsigned char symbol) {
+            return static_cast<char>(std::tolower(symbol));
+        });
+
+        if (token == expected_token) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 } // namespace
 
 router Session::router_;
@@ -145,23 +171,18 @@ void Session::notify(const std::string &message) {
     std::string message_data = message;
 
     boost::asio::dispatch(strand_, [self, message_data = std::move(message_data)]() mutable {
-        self->enqueue_write(std::move(message_data), false, false);
+        self->enqueue_write(std::move(message_data), WriteAction::none);
     });
 }
 
-void Session::write_response(
-    HttpResponse response,
-    bool read_next_request,
-    bool close_after_write
-) {
+void Session::write_response(HttpResponse response, WriteAction action) {
     auto self = shared_from_this();
     std::string response_data = response.to_string();
 
     boost::asio::dispatch(
         strand_,
-        [self, response_data = std::move(response_data), read_next_request, close_after_write](
-        ) mutable {
-            self->enqueue_write(std::move(response_data), read_next_request, close_after_write);
+        [self, response_data = std::move(response_data), action]() mutable {
+            self->enqueue_write(std::move(response_data), action);
         }
     );
 }
@@ -187,10 +208,21 @@ void Session::handle_request_body(http_request req, std::string body) {
         }
     }
 
+    const bool request_close = header_contains_token(req, "connection", "close");
+
     auto self = shared_from_this();
-    router_.route_request(io_context_, std::move(req), [self](HttpResponse response) {
-        self->write_response(std::move(response));
-    });
+    router_
+        .route_request(io_context_, std::move(req), [self, request_close](HttpResponse response) {
+            const bool close_connection = request_close || response.should_close();
+            if (close_connection) {
+                response.set_header("Connection", "close");
+            }
+
+            self->write_response(
+                std::move(response),
+                close_connection ? WriteAction::close_connection : WriteAction::read_next_request
+            );
+        });
 }
 
 void Session::write_error_response(int status, std::string message) {
@@ -201,7 +233,7 @@ void Session::write_error_response(int status, std::string message) {
     response.set_header("Content-Type", "application/json");
     response.set_header("Connection", "close");
     response.set_body(body.dump());
-    write_response(std::move(response), false, true);
+    write_response(std::move(response), WriteAction::close_connection);
 }
 
 void Session::read_request() {
@@ -317,7 +349,7 @@ void Session::read_request() {
     );
 }
 
-void Session::enqueue_write(std::string data, bool read_next_request, bool close_after_write) {
+void Session::enqueue_write(std::string data, WriteAction action) {
     if (closed_) {
         return;
     }
@@ -326,8 +358,7 @@ void Session::enqueue_write(std::string data, bool read_next_request, bool close
 
     write_queue_.emplace_back(PendingWrite{
         .data = std::move(data),
-        .read_next_request = read_next_request,
-        .close_after_write = close_after_write,
+        .action = action,
     });
 
     if (!write_in_progress) {
@@ -361,11 +392,10 @@ void Session::write_next() {
                     return;
                 }
 
-                const bool read_next_request = self->write_queue_.front().read_next_request;
-                const bool close_after_write = self->write_queue_.front().close_after_write;
+                const WriteAction action = self->write_queue_.front().action;
                 self->write_queue_.pop_front();
 
-                if (close_after_write) {
+                if (action == WriteAction::close_connection) {
                     self->close();
                     return;
                 }
@@ -374,7 +404,7 @@ void Session::write_next() {
                     self->write_next();
                 }
 
-                if (read_next_request) {
+                if (action == WriteAction::read_next_request) {
                     self->read_request();
                 }
             }
