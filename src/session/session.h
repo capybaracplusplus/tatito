@@ -27,8 +27,6 @@ public:
 
     void set_uuid(const std::string &uuid);
 
-    void notify(const std::string &message);
-
 private:
     static constexpr std::size_t max_header_size = 16 * 1024;
     static constexpr std::size_t max_body_size = 1024 * 1024;
@@ -36,7 +34,6 @@ private:
     static constexpr auto write_timeout = std::chrono::seconds(10);
 
     enum class WriteAction {
-        none,
         read_next_request,
         close_connection,
     };

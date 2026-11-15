@@ -173,15 +173,6 @@ void Session::set_uuid(const std::string &uuid) {
     uuid_ = uuid;
 }
 
-void Session::notify(const std::string &message) {
-    auto self = shared_from_this();
-    std::string message_data = message;
-
-    boost::asio::dispatch(strand_, [self, message_data = std::move(message_data)]() mutable {
-        self->enqueue_write(std::move(message_data), WriteAction::none);
-    });
-}
-
 void Session::write_response(HttpResponse response, WriteAction action) {
     auto self = shared_from_this();
     std::string response_data = response.to_string();
