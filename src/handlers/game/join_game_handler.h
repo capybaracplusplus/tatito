@@ -5,11 +5,8 @@
 
 class JoinGameHandler : public Handler {
 public:
-    void handle_request(
-        boost::asio::io_context &io_context,
-        http_request req,
-        Relay relay
-    ) override;
+    void
+    handle_request(boost::asio::io_context &io_context, http_request req, Relay relay) override;
 };
 
 #endif // JOIN_GAME_HANDLER_H

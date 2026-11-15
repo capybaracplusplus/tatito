@@ -17,17 +17,21 @@ using asio::use_awaitable;
 
 class MatchmakingService {
 public:
-  static std::future<void>
-  create(boost::asio::io_context &io_context, const std::string &creator_uuid,
-         const std::string &game_password) noexcept(false);
+    static std::future<void> create(
+        boost::asio::io_context &io_context,
+        const std::string &creator_uuid,
+        const std::string &game_password
+    ) noexcept(false);
 
-  static awaitable<void> remove_game(boost::asio::io_context &io_context,
-                                     std::string game_uuid) noexcept(false);
+    static awaitable<void>
+    remove_game(boost::asio::io_context &io_context, std::string game_uuid) noexcept(false);
 
-  static std::future<MatchmakingSesion>
-  join(boost::asio::io_context &io_context, const std::string &creator_uuid,
-       const std::string &joining_uuid,
-       const std::string &password) noexcept(false);
+    static std::future<MatchmakingSesion> join(
+        boost::asio::io_context &io_context,
+        const std::string &creator_uuid,
+        const std::string &joining_uuid,
+        const std::string &password
+    ) noexcept(false);
 };
 
 #endif // MATCHMAKING_SERVICE_H

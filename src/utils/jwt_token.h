@@ -7,10 +7,10 @@
 namespace utils {
 class JWTToken {
 public:
-  static std::string create(const std::string &secretKey) noexcept;
+    static std::string create(const std::string &secretKey) noexcept;
 
-  static void validateToken(const std::string &token,
-                            const std::string &secretKey) noexcept(false);
+    static void validateToken(const std::string &token, const std::string &secretKey) noexcept(false
+    );
 };
 } // namespace utils
 

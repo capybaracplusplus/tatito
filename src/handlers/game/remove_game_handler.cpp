@@ -27,10 +27,8 @@ void RemoveGameHandler::handle_request(
     co_spawn(
         io_context,
         MatchmakingService::remove_game(io_context, req.uuid),
-        [
-            response = std::move(response),
-            relay = std::move(relay)
-        ](std::exception_ptr error) mutable {
+        [response = std::move(response),
+         relay = std::move(relay)](std::exception_ptr error) mutable {
             if (error) {
                 try {
                     std::rethrow_exception(error);
@@ -46,5 +44,6 @@ void RemoveGameHandler::handle_request(
             }
 
             relay(std::move(response));
-        });
+        }
+    );
 }

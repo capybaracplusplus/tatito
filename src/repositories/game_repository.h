@@ -11,17 +11,18 @@ namespace repositories::game {
 
 class GameRepository {
 public:
-  GameRepository(std::shared_ptr<sw::redis::Redis> dbClient =
-                     create_game_redis_client()) noexcept;
+    GameRepository(
+        std::shared_ptr<sw::redis::Redis> dbClient = create_game_redis_client()
+    ) noexcept;
 
-  void add(const MatchmakingSesion &) noexcept;
+    void add(const MatchmakingSesion &) noexcept;
 
-  bool remove(void);
+    bool remove(void);
 
-  std::optional<std::string> find(const std::string &uuid) noexcept;
+    std::optional<std::string> find(const std::string &uuid) noexcept;
 
 private:
-  std::shared_ptr<sw::redis::Redis> dbClient_;
+    std::shared_ptr<sw::redis::Redis> dbClient_;
 };
 } // namespace repositories::game
 

@@ -26,8 +26,7 @@ void JoinGameHandler::handle_request(
     }
     json res;
     try {
-        auto future =
-                MatchmakingService::join(io_context, game_id, req.uuid, password);
+        auto future = MatchmakingService::join(io_context, game_id, req.uuid, password);
         MatchmakingSesion game_sesion = future.get();
         response.set_status(201);
         res["game_id"] = game_sesion.game_uuid;
@@ -38,8 +37,7 @@ void JoinGameHandler::handle_request(
         try {
             NotificationService::notify(io_context, game_id, body);
         } catch (const std::exception &notify_error) {
-            BOOST_LOG_TRIVIAL(error)
-          << "Notification failed: " << notify_error.what();
+            BOOST_LOG_TRIVIAL(error) << "Notification failed: " << notify_error.what();
         }
     } catch (const std::exception &e) {
         response.set_status(400);
