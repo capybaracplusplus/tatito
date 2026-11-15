@@ -167,6 +167,10 @@ void Session::write_response(
 }
 
 void Session::handle_request_body(http_request req, std::string body) {
+    if (closed_) {
+        return;
+    }
+
     const bool empty_body = std::all_of(body.begin(), body.end(), [](unsigned char symbol) {
         return std::isspace(symbol);
     });
@@ -201,6 +205,10 @@ void Session::write_error_response(int status, std::string message) {
 }
 
 void Session::read_request() {
+    if (closed_) {
+        return;
+    }
+
     auto self = shared_from_this();
 
     boost::asio::async_read_until(
@@ -210,15 +218,24 @@ void Session::read_request() {
         boost::asio::bind_executor(
             strand_,
             [self](boost::system::error_code ec, std::size_t header_length) {
+                if (self->closed_) {
+                    return;
+                }
+
                 if (ec) {
                     if (ec == boost::asio::error::not_found ||
                         ec == boost::asio::error::no_buffer_space) {
                         self->write_error_response(431, "request headers are too large");
-                    } else if (ec == boost::asio::error::eof) {
+                        return;
+                    }
+
+                    if (ec == boost::asio::error::eof) {
                         BOOST_LOG_TRIVIAL(info) << "Connection closed by client (EOF).";
                     } else {
                         BOOST_LOG_TRIVIAL(error) << "Header read error: " << ec.message();
                     }
+
+                    self->close();
                     return;
                 }
 
@@ -281,8 +298,13 @@ void Session::read_request() {
                         [self,
                          req = std::move(req),
                          body](boost::system::error_code ec, std::size_t) mutable {
+                            if (self->closed_) {
+                                return;
+                            }
+
                             if (ec) {
                                 BOOST_LOG_TRIVIAL(error) << "Body read error: " << ec.message();
+                                self->close();
                                 return;
                             }
 
@@ -296,6 +318,10 @@ void Session::read_request() {
 }
 
 void Session::enqueue_write(std::string data, bool read_next_request, bool close_after_write) {
+    if (closed_) {
+        return;
+    }
+
     const bool write_in_progress = !write_queue_.empty();
 
     write_queue_.emplace_back(PendingWrite{
@@ -310,6 +336,10 @@ void Session::enqueue_write(std::string data, bool read_next_request, bool close
 }
 
 void Session::write_next() {
+    if (closed_ || write_queue_.empty()) {
+        return;
+    }
+
     auto self = shared_from_this();
 
     boost::asio::async_write(
@@ -321,9 +351,13 @@ void Session::write_next() {
                 boost::system::error_code ec,
                 std::size_t /*length*/
             ) {
+                if (self->closed_) {
+                    return;
+                }
+
                 if (ec) {
                     BOOST_LOG_TRIVIAL(error) << " write error: " << ec.message();
-                    self->write_queue_.clear();
+                    self->close();
                     return;
                 }
 
@@ -332,11 +366,7 @@ void Session::write_next() {
                 self->write_queue_.pop_front();
 
                 if (close_after_write) {
-                    self->write_queue_.clear();
-
-                    boost::system::error_code ignored_error;
-                    self->socket_.shutdown(tcp::socket::shutdown_both, ignored_error);
-                    self->socket_.close(ignored_error);
+                    self->close();
                     return;
                 }
 
@@ -350,4 +380,18 @@ void Session::write_next() {
             }
         )
     );
+}
+
+void Session::close() {
+    if (closed_) {
+        return;
+    }
+
+    closed_ = true;
+    write_queue_.clear();
+
+    boost::system::error_code ignored_error;
+    socket_.cancel(ignored_error);
+    socket_.shutdown(tcp::socket::shutdown_both, ignored_error);
+    socket_.close(ignored_error);
 }

@@ -49,6 +49,8 @@ private:
 
     void write_next();
 
+    void close();
+
 private:
     tcp::socket socket_;
     boost::asio::io_context &io_context_;
@@ -60,6 +62,7 @@ private:
 
     static router router_;
     std::string uuid_;
+    bool closed_ = false;
 };
 
 #endif // SESSION_H
