@@ -5,6 +5,7 @@
 #include <memory>
 #include <routes/router.h>
 #include <string>
+#include <utils/http_response.h>
 
 using boost::asio::ip::tcp;
 
@@ -20,6 +21,8 @@ public:
 
 private:
   void read_request();
+
+  void write_response(HttpResponse response);
 
 private:
   tcp::socket socket_;

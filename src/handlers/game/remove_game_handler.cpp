@@ -15,31 +15,36 @@ using asio::use_awaitable;
 
 using json = nlohmann::json;
 
-void RemoveGameHandler::handle_request(boost::asio::io_context &io_context,
-                                       tcp::socket &socket,
-                                       const http_request &req) {
-  HttpResponse response;
-  response.set_header("Content-Type", "text/plain");
-  response.set_header("Connection", "keep-alive");
+void RemoveGameHandler::handle_request(
+    boost::asio::io_context &io_context,
+    http_request req,
+    Relay relay
+) {
+    HttpResponse response;
+    response.set_header("Content-Type", "application/json");
+    response.set_header("Connection", "keep-alive");
 
-  co_spawn(
-      io_context, MatchmakingService::remove_game(io_context, req.uuid),
-      [response, &io_context, &socket, this](std::exception_ptr e) mutable {
-        if (e) {
-          try {
-            std::rethrow_exception(e);
-          } catch (const std::exception &ex) {
-            response.set_status(400);
-            json res;
-            res["error"] = ex.what();
-            response.set_body(res.dump());
-          }
-        } else {
-          response.set_status(200);
-          response.set_body("{}"); // пустой json для ответа
-        }
+    co_spawn(
+        io_context,
+        MatchmakingService::remove_game(io_context, req.uuid),
+        [
+            response = std::move(response),
+            relay = std::move(relay)
+        ](std::exception_ptr error) mutable {
+            if (error) {
+                try {
+                    std::rethrow_exception(error);
+                } catch (const std::exception &ex) {
+                    response.set_status(400);
+                    json body;
+                    body["error"] = ex.what();
+                    response.set_body(body.dump());
+                }
+            } else {
+                response.set_status(200);
+                response.set_body("{}");
+            }
 
-        // Отправляем ответ здесь, после завершения remove_game
-        send_response(io_context, socket, response.to_string());
-      });
+            relay(std::move(response));
+        });
 }

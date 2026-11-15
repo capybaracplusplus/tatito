@@ -5,15 +5,18 @@
 
 class router {
 public:
-  router();
+    router();
 
-  void route_request(boost::asio::io_context &io_context, tcp::socket &socket,
-                     http_request &&req);
+    void route_request(
+        boost::asio::io_context &io_context,
+        http_request req,
+        Handler::Relay relay
+    );
 
 private:
-  void register_all_routes();
+    void register_all_routes();
 
-  route_registry routes_;
+    route_registry routes_;
 };
 
 #endif // ROUTER_H

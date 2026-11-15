@@ -10,7 +10,6 @@ add_executable(${PROJECT_NAME})
 
 target_sources(${PROJECT_NAME} PRIVATE
         src/main.cpp
-        src/handlers/base_handler.cpp
         src/handlers/not_found_handler.cpp
         src/handlers/notify_handler.cpp
         src/handlers/game/create_game_handler.cpp

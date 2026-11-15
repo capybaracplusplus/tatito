@@ -1,21 +1,23 @@
 #ifndef HANDLER_H
 #define HANDLER_H
 
-#include <boost/asio.hpp>
-#include <string>
+#include <boost/asio/io_context.hpp>
+#include <functional>
 #include <utils/http_request.h>
-using boost::asio::ip::tcp;
+#include <utils/http_response.h>
+
 
 class Handler {
 public:
-  virtual ~Handler() = default;
+    using Relay = std::function<void(HttpResponse)>;
 
-  virtual void handle_request(boost::asio::io_context &io_context,
-                              tcp::socket &socket, const http_request &req) = 0;
+    virtual ~Handler() = default;
 
-protected:
-  virtual void send_response(boost::asio::io_context &io_context,
-                             tcp::socket &socket, const std::string &response);
+    virtual void handle_request(
+        boost::asio::io_context &io_context,
+        http_request req,
+        Relay relay
+    ) = 0;
 };
 
 #endif // HANDLER_H

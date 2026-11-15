@@ -35,6 +35,25 @@ void Session::notify(const std::string &message) {
       });
 }
 
+void Session::write_response(HttpResponse response) {
+  auto self = shared_from_this();
+  auto response_data =
+      std::make_shared<std::string>(response.to_string());
+
+  boost::asio::async_write(
+      socket_, boost::asio::buffer(*response_data),
+      [self, response_data](boost::system::error_code ec,
+                            std::size_t /*length*/) {
+        if (ec) {
+          BOOST_LOG_TRIVIAL(error)
+              << "Response write error: " << ec.message();
+          return;
+        }
+
+        self->read_request();
+      });
+}
+
 http_request process_headers(const std::string &raw_headers) {
   http_request parsed_request;
   std::istringstream stream(raw_headers);
@@ -110,8 +129,11 @@ void Session::read_request() {
             req.body = json::object();
           }
 
-          router_.route_request(io_context_, socket_, std::move(req));
-          read_request();
+          router_.route_request(
+              io_context_, std::move(req),
+              [self](HttpResponse response) {
+                self->write_response(std::move(response));
+              });
         } else {
           // дочитываем оставшееся тело
           boost::asio::async_read(
@@ -148,8 +170,11 @@ void Session::read_request() {
                   req.body = json::object();
                 }
 
-                router_.route_request(io_context_, socket_, std::move(req));
-                read_request();
+                router_.route_request(
+                    io_context_, std::move(req),
+                    [self](HttpResponse response) {
+                      self->write_response(std::move(response));
+                    });
               });
         }
       });

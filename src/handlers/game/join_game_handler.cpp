@@ -7,45 +7,46 @@
 
 using json = nlohmann::json;
 
-void JoinGameHandler::handle_request(boost::asio::io_context &io_context,
-                                     tcp::socket &socket,
-                                     const http_request &req) {
-  HttpResponse response;
-  response.set_header("Content-Type", "application/json");
-  response.set_header("Connection", "keep-alive");
+void JoinGameHandler::handle_request(
+    boost::asio::io_context &io_context,
+    http_request req,
+    Relay relay
+) {
+    HttpResponse response;
+    response.set_header("Content-Type", "application/json");
+    response.set_header("Connection", "keep-alive");
 
-  std::string game_id = "";
-  std::string password = "";
-  if (req.body.contains("game_id")) {
-    game_id = req.body["game_id"].get<std::string>();
-  }
-  if (req.body.contains("password")) {
-    password = req.body["password"].get<std::string>();
-  }
-  json res;
-  try {
-    auto future =
-        MatchmakingService::join(io_context, game_id, req.uuid, password);
-    MatchmakingSesion game_sesion = future.get();
-    response.set_status(201);
-    res["game_id"] = game_sesion.game_uuid;
-    auto body = res.dump();
-    response.set_body(body);
-    response.set_header("Content-Length", std::to_string(res.dump().size()));
-
-    send_response(io_context, socket, response.to_string());
-
-    try {
-      NotificationService::notify(io_context, game_id, body);
-    } catch (const std::exception &notify_error) {
-      BOOST_LOG_TRIVIAL(error)
-          << "Notification failed: " << notify_error.what();
+    std::string game_id = "";
+    std::string password = "";
+    if (req.body.contains("game_id")) {
+        game_id = req.body["game_id"].get<std::string>();
     }
-  } catch (const std::exception &e) {
-    response.set_status(400);
-    res["error"] = e.what();
-    response.set_body(res.dump());
-    response.set_header("Content-Length", std::to_string(res.dump().size()));
-    send_response(io_context, socket, response.to_string());
-  }
+    if (req.body.contains("password")) {
+        password = req.body["password"].get<std::string>();
+    }
+    json res;
+    try {
+        auto future =
+                MatchmakingService::join(io_context, game_id, req.uuid, password);
+        MatchmakingSesion game_sesion = future.get();
+        response.set_status(201);
+        res["game_id"] = game_sesion.game_uuid;
+        auto body = res.dump();
+        response.set_body(body);
+        response.set_header("Content-Length", std::to_string(res.dump().size()));
+
+        try {
+            NotificationService::notify(io_context, game_id, body);
+        } catch (const std::exception &notify_error) {
+            BOOST_LOG_TRIVIAL(error)
+          << "Notification failed: " << notify_error.what();
+        }
+    } catch (const std::exception &e) {
+        response.set_status(400);
+        res["error"] = e.what();
+        response.set_body(res.dump());
+        response.set_header("Content-Length", std::to_string(res.dump().size()));
+    }
+
+    relay(std::move(response));
 }
