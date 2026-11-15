@@ -1,6 +1,7 @@
 #ifndef SESSION_H
 #define SESSION_H
 
+#include <cstddef>
 #include <deque>
 #include <memory>
 #include <string>
@@ -23,16 +24,28 @@ public:
     void notify(const std::string &message);
 
 private:
+    static constexpr std::size_t max_header_size = 16 * 1024;
+    static constexpr std::size_t max_body_size = 1024 * 1024;
+
     struct PendingWrite {
         std::string data;
         bool read_next_request;
+        bool close_after_write;
     };
 
     void read_request();
 
-    void write_response(HttpResponse response);
+    void handle_request_body(http_request req, std::string body);
 
-    void enqueue_write(std::string data, bool read_next_request);
+    void write_error_response(int status, std::string message);
+
+    void write_response(
+        HttpResponse response,
+        bool read_next_request = true,
+        bool close_after_write = false
+    );
+
+    void enqueue_write(std::string data, bool read_next_request, bool close_after_write);
 
     void write_next();
 
