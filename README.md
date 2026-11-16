@@ -29,3 +29,7 @@ For an optimized build:
 cmake --preset release
 cmake --build --preset release --parallel
 ```
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
